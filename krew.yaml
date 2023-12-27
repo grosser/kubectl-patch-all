@@ -1,0 +1,17 @@
+# krew plugin manifest, used to install with `krew`
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: "patch-all"
+spec:
+  version: "v0.0.1"
+  homepage: https://github.com/grosser/kubectl-patch-all
+  shortDescription: Use kubectl to patch all matching items
+  description: Use kubectl to patch all matching items
+  platforms:
+  - uri: https://github.com/grosser/kubectl-patch-all/archive/v0.0.1.zip
+    sha256: TODO
+    files:
+    - from: "*"
+      to: "."
+    bin: "kubectl-patch-all"

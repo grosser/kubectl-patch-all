@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# use kubectl to patch all matching items
+
+def sh(command)
+  puts command
+  result = `#{command}`
+  abort "#{command}\n#{result}" unless $?.success?
+  result
+end
+
+# TODO: remove --as once this is a plugin
+def kubectl(command)
+  if (context = ENV["CONTEXT"])
+    context = "--context #{context}"
+  end
+  sh "kubectl #{command} --as admin --as-group system:masters #{context}"
+end
+
+
+require 'json'
+require 'shellwords'
+
+# find patch
+abort "No --patch found" unless (index = ARGV.index("--patch")) # TODO: support = version
+ARGV.delete_at index # discard option
+patch = ARGV.delete_at index
+abort "No --type found" unless (index = ARGV.index("--type")) # TODO: support = version
+ARGV.delete_at index # discard option
+type = ARGV.delete_at index
+
+
+# find items and confirm
+list = JSON.parse(kubectl("get #{ARGV.shelljoin} -o json")).fetch("items")
+abort "No resources found" if list.size == 0
+puts "Patch #{list.size} resources ? (y/n)"
+abort unless $stdin.gets.strip == "y"
+
+# remove selector (TODO: support long form and = version)
+if (index = ARGV.index("-l"))
+  ARGV.delete_at index
+  ARGV.delete_at index
+end
+
+# patch items
+list.each do |item|
+  selector = "#{ARGV.shelljoin} #{item.dig("metadata", "name")} -n #{item.dig("metadata", "namespace")}"
+  puts kubectl("patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape}")
+end
