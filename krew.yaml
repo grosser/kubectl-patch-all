@@ -9,9 +9,13 @@ spec:
   shortDescription: Use kubectl to patch all matching items
   description: Use kubectl to patch all matching items
   platforms:
-  - uri: https://github.com/grosser/kubectl-patch-all/archive/v0.0.1.zip
-    sha256: TODO
+  - uri: https://github.com/grosser/kubectl-patch-all/archive/refs/tags/v0.0.1.zip
+    sha256: 21f9a9104465f122b53839d8f01856e8dc8e3c0e36f49ff17181b3904af368ba
+    # works for all platforms, workaround for https://github.com/kubernetes-sigs/krew/issues/847
+    selector:
+      matchExpressions:
+      - { key: "os", operator: "NotIn", values: [ "true" ] }
     files:
-    - from: "*"
+    - from: "*/kubectl-patch-all"
       to: "."
     bin: "kubectl-patch-all"
