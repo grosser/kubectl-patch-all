@@ -8,41 +8,52 @@ def sh(command)
   result
 end
 
-# TODO: remove --as once this is a plugin
 def kubectl(command)
-  if (context = ENV["CONTEXT"])
-    context = "--context #{context}"
-  end
-  sh "kubectl #{command} --as admin --as-group system:masters #{context}"
+  sh "kubectl #{command}"
 end
 
+def extract_option(*formats, required:)
+  formats.each do |option|
+    ARGV.each_with_index do |arg, i|
+      if arg == option # ["-p", "foo"]
+        ARGV.delete_at i
+        return ARGV.delete_at i
+      end
+      if (value = arg[/^#{option}=(.*)/, 1]) # ["-p=foo"]
+        ARGV.delete_at i
+        return value
+      end
+    end
+  end
+  abort "No #{formats.join(" or ")} option given" if required
+end
+
+def discard_option(*formats)
+  extract_option *formats, required: false
+end
 
 require 'json'
 require 'shellwords'
 
-# find patch
-abort "No --patch found" unless (index = ARGV.index("--patch")) # TODO: support = version
-ARGV.delete_at index # discard option
-patch = ARGV.delete_at index
-abort "No --type found" unless (index = ARGV.index("--type")) # TODO: support = version
-ARGV.delete_at index # discard option
-type = ARGV.delete_at index
-
+abort "Need some arguments" if ARGV.size == 0
+abort "First argument must be the resource (e.g. pods)" if (resource = ARGV.shift).start_with?("-")
+patch = extract_option "-p", "--patch", required: true
+type = extract_option "-t", "--type", required: true
 
 # find items and confirm
-list = JSON.parse(kubectl("get #{ARGV.shelljoin} -o json")).fetch("items")
+list = JSON.parse(kubectl("get #{resource} #{ARGV.shelljoin} -o json")).fetch("items")
 abort "No resources found" if list.size == 0
 puts "Patch #{list.size} resources ? (y/n)"
 abort unless $stdin.gets.strip == "y"
 
-# remove selector (TODO: support long form and = version)
-if (index = ARGV.index("-l"))
-  ARGV.delete_at index
-  ARGV.delete_at index
-end
+# remove options that patch does not support
+discard_option "-l", "--selector"
+discard_option "--field-selector"
+discard_option "-n", "--namespace"
+discard_option "-A", "--all-namespaces"
 
-# patch items
+# patch items (also supporting resource being "deployments,statefulsets")
 list.each do |item|
-  selector = "#{ARGV.shelljoin} #{item.dig("metadata", "name")} -n #{item.dig("metadata", "namespace")}"
-  puts kubectl("patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape}")
+  selector = "#{item.fetch("kind")} #{item.dig("metadata", "name")} -n #{item.dig("metadata", "namespace")}"
+  puts kubectl("patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape} #{ARGV.shelljoin}")
 end

@@ -5,8 +5,15 @@ Use kubectl to patch all matching items
 Change `terminationGracePeriodSeconds` of all deployment pods
 
 ```bash
-kubectl patch-all deployment -A --type merge --patch '{"spec":{"template":{"spec":{"terminationGracePeriodSeconds":0}}}}'
+kubectl patch-all deployment --type merge --patch '{"spec":{"template":{"spec":{"terminationGracePeriodSeconds":0}}}}'
+> kubectl get deployment -o json
+> Patch 5 resources ? (y/n)
+> kubectl patch Deployment app-server -n default --type merge --patch '{"spec":{"template":{"spec":{"terminationGracePeriodSeconds":0}}}}
+> ... 4 others
 ```
+
+- Passes along all options like `-l` / `-n` / `--as` / '--context' etc
+- Supports multiple resources `kubectl patch-all deployment,statefulset --patch ...`
 
 # Install
 
