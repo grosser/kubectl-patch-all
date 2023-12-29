@@ -1,15 +1,16 @@
 #!/usr/bin/env ruby
 # use kubectl to patch all matching items
 
-def sh(command)
-  puts command
+# when we run in parallel we capture the command too so everything prints as one
+def sh(command, capture_command: false)
+  puts command unless capture_command
   result = `#{command}`
   abort "#{command}\n#{result}" unless $?.success?
-  result
+  capture_command ? "#{command}\n#{result}" : result
 end
 
-def kubectl(command)
-  sh "kubectl #{command}"
+def kubectl(command, **kwargs)
+  sh "kubectl #{command}", **kwargs
 end
 
 def extract_option(*formats, required:, has_value: true)
@@ -32,6 +33,26 @@ def discard_option(*formats, **kwargs)
   extract_option *formats, required: false, **kwargs
 end
 
+def in_parallel(items, parallel:, &block)
+  if parallel != 0
+    threads = Array.new(parallel).map do
+      Thread.new do
+        while (item = items.shift)
+          yield item
+        end
+      end
+    end
+
+    # wait for all threads to finish and re-raise exception if they happen
+    loop do
+      break if threads.all? { |t| t.join(0) }
+      sleep 0.1
+    end
+  else
+    items.each(&block)
+  end
+end
+
 require 'json'
 require 'shellwords'
 
@@ -39,6 +60,7 @@ abort "Need some arguments" if ARGV.size == 0
 abort "First argument must be the resource (e.g. pods)" if (resource = ARGV.shift).start_with?("-")
 patch = extract_option "-p", "--patch", required: true
 type = extract_option "-t", "--type", required: true
+parallel = Integer(extract_option("--parallel", required: false) || "0")
 
 # find items and confirm
 list = JSON.parse(kubectl("get #{resource} #{ARGV.shelljoin} -o json")).fetch("items")
@@ -53,7 +75,12 @@ discard_option "-n", "--namespace"
 discard_option "-A", "--all-namespaces", has_value: false
 
 # patch items (also supporting resource being "deployments,statefulsets")
-list.each do |item|
+mutex = Mutex.new
+in_parallel(list, parallel: parallel) do |item|
   selector = "#{item.fetch("kind")} #{item.dig("metadata", "name")} -n #{item.dig("metadata", "namespace")}"
-  puts kubectl("patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape} #{ARGV.shelljoin}")
+  result = kubectl(
+    "patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape} #{ARGV.shelljoin}",
+    capture_command: (parallel != 0)
+  )
+  mutex.synchronize { puts result }
 end

@@ -14,6 +14,7 @@ kubectl patch-all deployment --type merge --patch '{"spec":{"template":{"spec":{
 
 - Passes along all options like `-l` / `-n` / `--as` / '--context' etc
 - Supports multiple resources `kubectl patch-all deployment,statefulset --patch ...`
+- Supports parallel patching of many resources with `--parallel 10`
 
 # Install
 
