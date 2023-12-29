@@ -40,11 +40,12 @@ cd kubectl-patch-all && ./kubectl-patch-all
 
 # Release
 
-- tag new release
-- push release
+- tag new release `git tag <TAG>`
+- push release `git push --tags`
 - `wget https://github.com/grosser/kubectl-patch-all/archive/refs/tags/<TAG>.zip`
 - `sha256sum <TAG>.zip`
-- update `krew.yaml` with new url and sha and push a new commit
+- update `krew.yaml` with new url, tag, and sha
+- commit and push
 - remove old: `kubectl krew remove patch-all`
 - test install new: `kubectl krew install --manifest-url https://raw.githubusercontent.com/grosser/kubectl-patch-all/main/krew.yaml`
 
