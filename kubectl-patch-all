@@ -12,12 +12,12 @@ def kubectl(command)
   sh "kubectl #{command}"
 end
 
-def extract_option(*formats, required:)
+def extract_option(*formats, required:, has_value: true)
   formats.each do |option|
     ARGV.each_with_index do |arg, i|
       if arg == option # ["-p", "foo"]
         ARGV.delete_at i
-        return ARGV.delete_at i
+        return has_value ? ARGV.delete_at(i) : true
       end
       if (value = arg[/^#{option}=(.*)/, 1]) # ["-p=foo"]
         ARGV.delete_at i
@@ -28,8 +28,8 @@ def extract_option(*formats, required:)
   abort "No #{formats.join(" or ")} option given" if required
 end
 
-def discard_option(*formats)
-  extract_option *formats, required: false
+def discard_option(*formats, **kwargs)
+  extract_option *formats, required: false, **kwargs
 end
 
 require 'json'
@@ -50,7 +50,7 @@ abort unless $stdin.gets.strip == "y"
 discard_option "-l", "--selector"
 discard_option "--field-selector"
 discard_option "-n", "--namespace"
-discard_option "-A", "--all-namespaces"
+discard_option "-A", "--all-namespaces", has_value: false
 
 # patch items (also supporting resource being "deployments,statefulsets")
 list.each do |item|
