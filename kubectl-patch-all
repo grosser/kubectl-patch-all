@@ -34,22 +34,20 @@ def discard_option(*formats, **kwargs)
 end
 
 def in_parallel(items, parallel:, &block)
-  if parallel != 0
-    threads = Array.new(parallel).map do
-      Thread.new do
-        while (item = items.shift)
-          yield item
-        end
+  return items.each(&block) if parallel == 0
+
+  threads = Array.new(parallel).map do
+    Thread.new do
+      while (item = items.shift)
+        yield item
       end
     end
+  end
 
-    # wait for all threads to finish and re-raise exception if they happen
-    loop do
-      break if threads.all? { |t| t.join(0) }
-      sleep 0.1
-    end
-  else
-    items.each(&block)
+  # wait for all threads to finish and re-raise exception if they happen
+  loop do
+    break if threads.all? { |t| t.join(0) }
+    sleep 0.1
   end
 end
 
@@ -65,6 +63,11 @@ parallel = Integer(extract_option("--parallel", required: false) || "0")
 # find items and confirm
 list = JSON.parse(kubectl("get #{resource} #{ARGV.shelljoin} -o json")).fetch("items")
 abort "No resources found" if list.size == 0
+
+# TODO: this is not supported atm and results in multiple patches to the same resource
+passed = (ARGV & list.map { |r| r.dig("metadata", "name") })
+abort "Names were given as argument, use patch directly: #{passed.join(", ")}" if passed.any?
+
 puts "Patch #{list.size} resources ? (y/n)"
 abort unless $stdin.gets.strip == "y"
 
