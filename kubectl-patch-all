@@ -30,7 +30,7 @@ def extract_option(*formats, required:, has_value: true)
 end
 
 def discard_option(*formats, **kwargs)
-  extract_option *formats, required: false, **kwargs
+  extract_option(*formats, required: false, **kwargs)
 end
 
 def in_parallel(items, parallel:, &block)

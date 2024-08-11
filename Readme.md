@@ -2,7 +2,7 @@ Use kubectl to patch all matching items
 
 # Usage
 
-Change `terminationGracePeriodSeconds` of all deployment pods
+For example: change `terminationGracePeriodSeconds` of all deployment pods
 
 ```bash
 kubectl patch-all deployment --type merge --patch '{"spec":{"template":{"spec":{"terminationGracePeriodSeconds":0}}}}'
@@ -12,7 +12,7 @@ kubectl patch-all deployment --type merge --patch '{"spec":{"template":{"spec":{
 > ... 4 others
 ```
 
-- Passes along all options like `-l` / `-n` / `--as` / '--context' etc
+- Passes along all options like `-l` / `-n` / `--as` / `--context` etc to `kubectl`
 - Supports multiple resources `kubectl patch-all deployment,statefulset --patch ...`
 - Supports parallel patching of many resources with `--parallel 10`
 
