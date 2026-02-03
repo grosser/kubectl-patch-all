@@ -55,7 +55,9 @@ require 'json'
 require 'shellwords'
 
 abort "Need some arguments" if ARGV.size == 0
-abort "First argument must be the resource (e.g. pods)" if (resource = ARGV.shift).start_with?("-")
+if (resource = ARGV.shift).start_with?("-")
+  abort "First argument must be the resource (e.g. pods), got #{resource}"
+end
 patch = extract_option "-p", "--patch", required: true
 type = extract_option "-t", "--type", required: true
 parallel = Integer(extract_option("--parallel", required: false) || "0")
@@ -80,7 +82,10 @@ discard_option "-A", "--all-namespaces", has_value: false
 # patch items (also supporting resource being "deployments,statefulsets")
 mutex = Mutex.new
 in_parallel(list, parallel: parallel) do |item|
-  selector = "#{item.fetch("kind")} #{item.dig("metadata", "name")} -n #{item.dig("metadata", "namespace")}"
+  selector = "#{item.fetch("kind")} #{item.dig("metadata", "name")}"
+  if (ns = item.dig("metadata", "namespace"))
+    selector += " -n #{ns}"
+  end
   result = kubectl(
     "patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape} #{ARGV.shelljoin}",
     capture_command: (parallel != 0)
