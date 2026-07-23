@@ -33,6 +33,19 @@ def discard_option(*formats, **kwargs)
   extract_option(*formats, required: false, **kwargs)
 end
 
+# find the first positional argument (the resource), skipping flags and their values
+# so `--context foo --as bar deployment` still finds `deployment`
+def extract_positional
+  ARGV.each_with_index do |arg, i|
+    next if arg.start_with?("-")
+    previous = (i > 0 ? ARGV[i - 1] : nil)
+    is_flag_value = previous && previous.start_with?("-") && !previous.include?("=")
+    next if is_flag_value
+    return ARGV.delete_at(i)
+  end
+  nil
+end
+
 def in_parallel(items, parallel:, &block)
   return items.each(&block) if parallel == 0
 
@@ -55,13 +68,13 @@ require 'json'
 require 'shellwords'
 
 abort "Need some arguments" if ARGV.size == 0
-if (resource = ARGV.shift).start_with?("-")
-  abort "First argument must be the resource (e.g. pods), got #{resource}"
-end
 patch = extract_option "-p", "--patch", required: true
 type = extract_option "-t", "--type", required: true
 subresource = extract_option "--subresource", required: false
 parallel = Integer(extract_option("--parallel", required: false) || "0")
+
+resource = extract_positional
+abort "First argument must be the resource (e.g. pods)" unless resource
 
 # find items and confirm
 list = JSON.parse(kubectl("get #{resource} #{ARGV.shelljoin} -o json")).fetch("items")
