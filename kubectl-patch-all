@@ -60,6 +60,7 @@ if (resource = ARGV.shift).start_with?("-")
 end
 patch = extract_option "-p", "--patch", required: true
 type = extract_option "-t", "--type", required: true
+subresource = extract_option "--subresource", required: false
 parallel = Integer(extract_option("--parallel", required: false) || "0")
 
 # find items and confirm
@@ -86,6 +87,7 @@ in_parallel(list, parallel: parallel) do |item|
   if (ns = item.dig("metadata", "namespace"))
     selector += " -n #{ns}"
   end
+  selector += " --subresource #{subresource.shellescape}" if subresource
   result = kubectl(
     "patch #{selector} --patch #{patch.shellescape} --type #{type.shellescape} #{ARGV.shelljoin}",
     capture_command: (parallel != 0)
