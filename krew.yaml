@@ -4,13 +4,13 @@ kind: Plugin
 metadata:
   name: "patch-all"
 spec:
-  version: "v0.0.5"
+  version: "v0.0.6"
   homepage: https://github.com/grosser/kubectl-patch-all
   shortDescription: Use kubectl to patch all matching items
   description: Use kubectl to patch all matching items
   platforms:
-  - uri: https://github.com/grosser/kubectl-patch-all/archive/refs/tags/v0.0.5.zip
-    sha256: 213f8d4f514a289eeff9cd8e306d9094456737b86cddd0615d0d129f41097f58
+  - uri: https://github.com/grosser/kubectl-patch-all/archive/refs/tags/v0.0.6.zip
+    sha256: ff9f5de1ef72d96f6053828cc834f39b973255023689dd3d0a136cfd961b73af
     # works for all platforms, workaround for https://github.com/kubernetes-sigs/krew/issues/847
     selector:
       matchExpressions:
