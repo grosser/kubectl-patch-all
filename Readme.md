@@ -16,6 +16,7 @@ kubectl patch-all deployment --type merge --patch '{"spec":{"template":{"spec":{
 - Supports multiple resources `kubectl patch-all deployment,statefulset --patch ...`
 - Supports patching subresources `kubectl patch-all deployment --subresource status --patch ...`
 - Supports parallel patching of many resources with `--parallel 10`
+- Supports skipping the confirmation prompt with `--yes` (also auto-skipped when stdin is not a tty)
 
 # Install
 

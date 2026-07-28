@@ -64,6 +64,12 @@ def in_parallel(items, parallel:, &block)
   end
 end
 
+def confirm(message)
+  return unless $stdin.tty?
+  puts "#{message} (y/n)"
+  abort unless $stdin.gets.strip == "y"
+end
+
 require 'json'
 require 'shellwords'
 
@@ -72,6 +78,7 @@ patch = extract_option "-p", "--patch", required: true
 type = extract_option "-t", "--type", required: true
 subresource = extract_option "--subresource", required: false
 parallel = Integer(extract_option("--parallel", required: false) || "0")
+yes = discard_option "--yes", has_value: false
 
 resource = extract_positional
 abort "First argument must be the resource (e.g. pods)" unless resource
@@ -84,8 +91,7 @@ abort "No resources found" if list.size == 0
 passed = (ARGV & list.map { |r| r.dig("metadata", "name") })
 abort "Names were given as argument, use patch directly: #{passed.join(", ")}" if passed.any?
 
-puts "Patch #{list.size} resources ? (y/n)"
-abort unless $stdin.gets.strip == "y"
+confirm "Patch #{list.size} resources ?" unless yes
 
 # remove options that patch does not support
 discard_option "-l", "--selector"
